@@ -7,31 +7,41 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Polynomials;
 
 namespace Lagrange_interpolation
 {
     public partial class Form1 : Form
     {
+        // Drawing classes for the 2 picture boxes
         static Graphics g1;
         static Graphics g2;
+        // This contains the points (x,y) the user adds by clicking on the canvas and their t values
         List<Point> points;
+        List<double> tValues;
 
+        // Save the index of the grabbed point of the upper canvas, and the index of the grabbed t value of the bottom canvas
         int pointGrabbed;
         int tGrabbed;
+
+        // bool value for either using a chord T value or a custom set
         private bool shouldUseChord;
 
-        private List<double> tValues;
 
         public Form1()
         {
             InitializeComponent();
             points = new List<Point>();
-            pointGrabbed = -1; tGrabbed = -1;
-            shouldUseChord = true;
             tValues = new List<double>();
+            pointGrabbed = -1; 
+            tGrabbed = -1;
+            shouldUseChord = true;
         }
 
+        // We'll call the drawing funcitons in the canvas_Paint event method
+        // To use this method, we'll have to call the canvas_Invalidate() method, which clears the canvas
+        // then the canvas_Paint will redraw everything
+
+        // Here we'll draw the polygon first, and then the input points
         private void canvas_Paint(object sender, PaintEventArgs e)
         {
             g1 = e.Graphics;
@@ -42,6 +52,15 @@ namespace Lagrange_interpolation
                 g1.DrawPoint(new Point(points[i].X - 3, points[i].Y - 3));
             }
         }
+
+        // In this event listener method, we'll differenciate between left and right mouse buttons
+        // On the left click, we'll first check if there is already a point on the cursor's location (e.X, e.Y)
+        // - If the value of the point index is (-1), then the palce where the mouse currently is is clear, so we can add
+        // a new point to the list, turn on the chord t values option then invalidate to redraw the polygon
+        // - If the value of the point index refers to an existing point, then we'll save it's index so we'll know which point 
+        // we are supposed to move with the canvas_MouseMove event listener method
+
+        // comment: we maximize the number of points to 9, because after 10 points the drawing funciton does not work
         private void canvas_MouseDown(object sender, MouseEventArgs e)
         {
             switch (e.Button)
@@ -67,6 +86,10 @@ namespace Lagrange_interpolation
             }
         }
 
+
+        // If we release the left mouse button, we'll set the index of the grabbed point to -1, so we no longer move any points on the canvas
+        // If it's the right button, it means we would want to remove a point from the list, so we check if there is a point on the cursor
+        // If there is, we remove the point and it's t_value then invalidate the canvas to calculate the new polygon
         private void canvas_MouseUp(object sender, MouseEventArgs e)
         {
             switch (e.Button)
@@ -87,6 +110,9 @@ namespace Lagrange_interpolation
                     break;
             }
         }
+
+        // If we have an index of a grabbed point, we change it's coordinate to the current x and y coordinates of the mouse's current location
+        // then invalidate the canvas to recalculate the t values and the polygon
         private void canvas_MouseMove(object sender, MouseEventArgs e)
         {
             if (pointGrabbed != -1)
@@ -96,12 +122,13 @@ namespace Lagrange_interpolation
             }
         }
 
+        // In this funciton we calculate the T values based on the sum of the distances between each point
         private List<double> Calculate_T_Values()
         {
             List<double> t_values = new List<double>();
             t_values.Add(0);
             for (int i = 1; i < points.Count; i++)
-            {
+            { 
                 t_values.Add(t_values.Last() + Math.Sqrt(Math.Pow(points[i].X - points[i - 1].X, 2) + Math.Pow(points[i].Y - points[i - 1].Y, 2)));
             }
             for (int i = 1; i < points.Count; i++)
@@ -131,6 +158,25 @@ namespace Lagrange_interpolation
                 tValues = Calculate_T_Values();
             }
             canvas2.Invalidate();
+
+            // Here the following happens:
+            /*
+             * - We create 2 vectors for the Gaussian Elimination: one for the t and x, and one for the t and y coordinates of the input points
+             *      so it looks something like that for the xMatrix: 
+             *                                                                          [
+             *      a0 + a1*t1 + a2*t1^2 + an*t1^n... = x1                                 [1, t1,   t1^2,   ..., t1^n   | x1   ]
+             *      a0 + a1*t2 + a2*t2^2 + an*t2^n... = x1                                 [1, t2,   t2^2,   ..., t2^n   | x2   ]
+             *                                                                             .
+             *                                                                             .
+             *                                                                             .
+             *      a0 + a1*tn-1 + a2*tn-1^2 + an*tn-1^n... = xn-1                         [1, tn-1, tn-1^2, ..., tn-1^n | xn-1 ]
+             *      a0 + a1*tn + a2*tn^2 + an*tn-1^n... = xn                               [1, tn,   tn^2,   ..., tn^n   | xn   ]
+             *                                                                          ]
+             * Then we calculate the values for (a0, a1, ..., an) with the Gaussian Eliminations by passing the t values and their x
+             * Same for the y values
+             * Because the Gaussian Elimination contains the values of the x and y coefficiencies at the last index of each row,
+             * we create an array for both of them and do a for loop
+             */
             if (points.Count > 1)
             {
                 double[,] xMatrix = new double[points.Count, points.Count+1];
@@ -160,6 +206,8 @@ namespace Lagrange_interpolation
                 Polynomial xPoly = new Polynomial(xCoeff);
                 Polynomial yPoly = new Polynomial(yCoeff);
 
+
+                // We start from
                 double currT = 0;
                 double d = 1.0 / 10000;
 
