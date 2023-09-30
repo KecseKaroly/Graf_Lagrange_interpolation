@@ -10,6 +10,8 @@ namespace Lagrange_interpolation
     {
         public Polynomial() : this(new double[] { .0, 1.0 })
         { }
+        // We get the coefficiencies from the Gauissan ELimination and we'll use them to calculate the value (x or y) that the polynom
+        // should return for the current t value
         public Polynomial(double[] coefficientArray)
         {
             Coefficients = (double[])coefficientArray.Clone();

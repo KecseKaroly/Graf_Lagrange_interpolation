@@ -207,7 +207,8 @@ namespace Lagrange_interpolation
                 Polynomial yPoly = new Polynomial(yCoeff);
 
 
-                // We start from
+                // We start from the t value 0, then we increase it by d then calculate the x and y values for each t values with the poly's
+                // calculate function where we have stored the coefficiencies, so we only need the current t value to calculate the coordinates
                 double currT = 0;
                 double d = 1.0 / 10000;
 
@@ -216,6 +217,7 @@ namespace Lagrange_interpolation
                 Point temp = new Point((int)currX, (int)currY);
                 while (currT < 1)
                 {
+                    // we calculate the current point and connect it with the previous one
                     currT += d;
                     currX = xPoly.Calculate(currT);
                     currY = yPoly.Calculate(currT);
@@ -227,6 +229,7 @@ namespace Lagrange_interpolation
             }
         }
 
+        // Got no clue how it works, haven't looked into it YET
         public static bool GaussianElimination(double[,] M)
         {
             // input checks
@@ -279,17 +282,9 @@ namespace Lagrange_interpolation
             return true;
         }
 
-        private void canvas2_MouseMove(object sender, MouseEventArgs e)
-        {
-            if(tGrabbed != -1)
-            {
-                double newT = (double)(e.X - canvas2.Left - 43) / (canvas2.Right - 63 - canvas2.Left - 43);
-                if(newT > 0 && newT < 1)
-                    tValues[tGrabbed] = newT;
-                canvas.Invalidate();
-            }
-        }
 
+        
+        // if we have clicked on a point in the second canvas, we get it's index and set the t value selection to custom
         private void canvas2_MouseDown(object sender, MouseEventArgs e)
         {
             if (shouldUseChord)
@@ -312,6 +307,19 @@ namespace Lagrange_interpolation
             tGrabbed = -1;
         }
 
+        // We move the current grabbed value to the cursor's x value and recalculate it's value;
+        private void canvas2_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (tGrabbed != -1)
+            {
+                double newT = (double)(e.X - canvas2.Left - 43) / (canvas2.Right - 63 - canvas2.Left - 43);
+                if (newT > 0 && newT < 1)
+                    tValues[tGrabbed] = newT;
+                canvas.Invalidate();
+            }
+        }
+
+        // in each drawing iteration we draw the [0,1] interval and the t values
         private void canvas2_Paint(object sender, PaintEventArgs e)
         {
             g2 = e.Graphics;
